@@ -1,13 +1,15 @@
 // storage-adapter-import-placeholder
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { payloadCloudPlugin } from '@payloadcms/payload-cloud'
-import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { BlocksFeature, EXPERIMENTAL_TableFeature, lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
 import { index, integer } from '@payloadcms/db-postgres/drizzle/pg-core'
+
+import { v4 as uuidv4 } from 'uuid';
 
 
 import { Users } from './collections/Users'
@@ -36,7 +38,57 @@ export default buildConfig({
       },
     ],
   },],
-  editor: lexicalEditor(),
+  editor: lexicalEditor({
+    features: ({ defaultFeatures, }) => [
+      ...defaultFeatures,
+      EXPERIMENTAL_TableFeature(),
+      BlocksFeature({
+        blocks: [
+          {
+            slug: 'br',
+            fields: [
+              {
+                name: 'id',
+                type: 'text',
+                defaultValue: uuid(),
+                hooks: {
+                  beforeValidate: [
+                    async ({ value }) => {
+                      console.log('value', value)
+                      return value
+                    }
+                  ]
+                },
+                hidden: true,
+              },
+              {
+                name: 'ignore',
+                type: 'text',
+              },
+            ],
+            interfaceName: 'BrBlock',
+          },
+        ],
+        inlineBlocks: [
+          {
+            slug: 'inline-block',
+            fields: [
+              {
+                name: 'id',
+                type: 'text',
+                defaultValue: uuidv4(),
+                hidden: true,
+              },
+              {
+                name: 'text',
+                type: 'text',
+              },
+            ],
+          },
+        ]
+      }),
+    ],
+  }),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
